@@ -127,16 +127,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hrniux/demoCodex.git"
+    "url": "git+https://github.com/hrniux/browser-game-arcade.git"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/hrniux/demoCodex/issues"
+    "url": "https://github.com/hrniux/browser-game-arcade/issues"
   },
-  "homepage": "https://github.com/hrniux/demoCodex#readme",
+  "homepage": "https://github.com/hrniux/browser-game-arcade#readme",
   "devDependencies": {
     "playwright": "^1.58.2"
   }
