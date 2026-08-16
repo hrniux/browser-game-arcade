@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="./index.html"><strong>Open the collection</strong></a> ·
-  <a href="https://hrniux.github.io/demoCodex/"><strong>Play the live site</strong></a> ·
+  <a href="https://hrniux.github.io/browser-game-arcade/"><strong>Play the live site</strong></a> ·
   <a href="./CONTRIBUTING.md"><strong>Contribute a new idea</strong></a> ·
   <a href="./.github/project-about.md"><strong>GitHub About copy</strong></a>
 </p>
@@ -44,7 +44,7 @@ DemoCodex 聚焦于“无需构建、打开即玩”的浏览器体验。当前�
     </td>
     <td width="33%" valign="top">
       <h3>Open The Source</h3>
-      <p><a href="https://github.com/hrniux/demoCodex"><strong>Browse the repo</strong></a></p>
+      <p><a href="https://github.com/hrniux/browser-game-arcade"><strong>Browse the repo</strong></a></p>
       <p>
         主推页面持续拆成 <code>HTML + src/css + src/js</code> 结构，适合直接拆解、复用和改造。
       </p>
@@ -183,8 +183,8 @@ DemoCodex 聚焦于“无需构建、打开即玩”的浏览器体验。当前�
 ### 本地运行
 
 ```bash
-git clone https://github.com/hrniux/demoCodex.git
-cd demoCodex
+git clone https://github.com/hrniux/browser-game-arcade.git
+cd browser-game-arcade
 python3 -m http.server 8000
 ```
 
