@@ -22,6 +22,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify demo manifest
+        run: node scripts/check-demo-manifest.mjs
+
+      - name: Run logic tests
+        run: node scripts/test-logic-suite.mjs
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
