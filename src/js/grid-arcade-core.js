@@ -816,12 +816,8 @@
       this.seedBase = options.fixedSeed ?? createSeedBase();
       this.autotest = Boolean(options.autotest);
       this.storageAvailable = this.canUseStorage();
-      this.bestScore = this.storageAvailable
-        ? Number(localStorage.getItem(config.storage.score) || 0)
-        : 0;
-      this.bestFloor = this.storageAvailable
-        ? Number(localStorage.getItem(config.storage.floor) || 0)
-        : 0;
+      this.bestScore = this.loadRecord(config.storage.score);
+      this.bestFloor = this.loadRecord(config.storage.floor);
       this.logs = [];
       this.layout = null;
       this.state = null;
@@ -856,9 +852,27 @@
       this.refs.pad.addEventListener('click', this.boundPadClick);
     }
 
+    loadRecord(key) {
+      if (!this.storageAvailable) {
+        return 0;
+      }
+      try {
+        return Number(localStorage.getItem(key) || 0);
+      } catch {
+        this.storageAvailable = false;
+        return 0;
+      }
+    }
+
     saveRecord(key, value) {
-      if (this.storageAvailable) {
+      if (!this.storageAvailable) {
+        return;
+      }
+      try {
         localStorage.setItem(key, String(value));
+      } catch {
+        // Keep session records and gameplay running if browser storage becomes unavailable.
+        this.storageAvailable = false;
       }
     }
 
@@ -955,7 +969,19 @@
     }
 
     onKeydown(event) {
-      if (event.repeat) {
+      if (event.repeat || event.defaultPrevented) {
+        return;
+      }
+
+      if (
+        event.target?.closest?.(
+          'input, select, textarea, [contenteditable]:not([contenteditable="false"])',
+        ) ||
+        (
+          (event.code === 'Enter' || event.code === 'Space') &&
+          event.target?.closest?.('button, a[href], [role="button"]')
+        )
+      ) {
         return;
       }
 

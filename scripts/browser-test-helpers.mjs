@@ -49,6 +49,11 @@ export async function readRenderState(page) {
   });
 }
 
+// Run in the page before gameplay shortcuts, leaving native controls intact.
+export function releaseGameKeyboardFocus() {
+  document.activeElement?.blur?.();
+}
+
 export async function openStartedPage(page, { url, startSelector, delayMs = 300 }) {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(delayMs);

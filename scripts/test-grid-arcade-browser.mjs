@@ -5,6 +5,7 @@ import {
   buildTestUrl,
   maybeCaptureScreenshot,
   readRenderState,
+  releaseGameKeyboardFocus,
   trackPageErrors,
 } from './browser-test-helpers.mjs';
 import { launchLocalChrome } from './local-chrome.mjs';
@@ -327,6 +328,8 @@ export async function runGridArcadeBrowserTest(config) {
         globalName: config.globalName,
         setup: scenario.setup,
       });
+      // Boot clicks leave Start focused; gameplay keys belong to the page surface.
+      await page.evaluate(releaseGameKeyboardFocus);
 
       for (const key of scenario.actions || []) {
         await page.keyboard.press(key);

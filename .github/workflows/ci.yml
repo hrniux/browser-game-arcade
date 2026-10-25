@@ -1,0 +1,61 @@
+name: Validate arcade
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arcade-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  logic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Manifest and native logic suites do not need npm install or a browser.
+      - name: Verify demo manifest
+        run: npm run check:manifest
+
+      - name: Run all logic tests
+        run: npm test
+
+  browser:
+    needs: logic
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      DEMOCODEX_CHROME_EXECUTABLE: /usr/bin/google-chrome
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify preinstalled Google Chrome
+        run: |
+          test -x "$DEMOCODEX_CHROME_EXECUTABLE"
+          "$DEMOCODEX_CHROME_EXECUTABLE" --version
+          node --input-type=module -e 'import { resolveLocalChromeExecutable } from "./scripts/local-chrome.mjs"; console.log(await resolveLocalChromeExecutable());'
+
+      - name: Install locked test dependencies without browser downloads
+        run: npm ci
+
+      - name: Run Google Chrome browser tests
+        run: npm run test:browser
