@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import core from '../src/js/grid-arcade-core.js';
 import grove from '../src/js/glow-grove.js';
+import orchid from '../src/js/orchid-guard.js';
+import * as browserHelpers from './browser-test-helpers.mjs';
 
 const config = {
   ...grove.CONFIG,
@@ -23,16 +25,31 @@ function createHarness(storage = new Map()) {
   );
   const getNode = (id) => {
     if (!nodes.has(id)) {
+      const handlers = new Map();
+      const classes = new Set();
+      const isButton = ['game-start', 'game-reset', 'game-wait-action', 'game-ability-action', 'game-restart'].includes(id);
       nodes.set(id, {
         id, textContent: '', innerHTML: '', width: 640, height: 640,
-        classList: { add() {}, remove() {} },
-        addEventListener() {},
+        tagName: isButton ? 'BUTTON' : id === 'body' ? 'BODY' : 'DIV',
+        classList: {
+          add: (name) => classes.add(name),
+          remove: (name) => classes.delete(name),
+          contains: (name) => classes.has(name),
+        },
+        addEventListener: (type, listener) => handlers.set(type, listener),
+        closest(selectors) {
+          return isButton && selectors.split(',').some((value) => value.trim() === 'button') ? this : null;
+        },
+        focus() { document.activeElement = this; },
+        blur() { if (document.activeElement === this) document.activeElement = document.body; },
+        click() { handlers.get('click')?.(); },
         getContext: () => ({ fillRect() {} }),
       });
     }
     return nodes.get(id);
   };
-  globalThis.document = { getElementById: getNode, querySelector: getNode };
+  const body = getNode('body');
+  globalThis.document = { body, activeElement: body, getElementById: getNode, querySelector: getNode };
   globalThis.window = { addEventListener: (type, listener) => listeners.set(type, listener) };
   globalThis.localStorage = storage instanceof Map ? {
     getItem: (key) => storage.get(key) ?? null,
@@ -41,7 +58,7 @@ function createHarness(storage = new Map()) {
   } : storage;
 
   return {
-    mount: () => core.mount(config, { fixedSeed: 42 }),
+    mount: (gameConfig = config) => core.mount(gameConfig, { fixedSeed: 42 }),
     nodes,
     press(code, { target = { closest: () => null }, defaultPrevented = false } = {}) {
       const event = {
@@ -127,6 +144,60 @@ function checkShortcutsAfterStartClick() {
   });
 }
 
+function checkOrchidLossAfterControlFocus() {
+  const harness = createHarness();
+  try {
+    const game = harness.mount(orchid.CONFIG);
+    const start = harness.nodes.get('game-start');
+    // A mouse Start click leaves the button focused, as the browser boot flow does.
+    start.focus();
+    start.click();
+    const baseline = JSON.parse(game.renderGameToText());
+    Object.assign(game.layout, {
+      start: { x: 0, y: 0 }, exit: { x: 6, y: 6 },
+      walls: new Set(), goals: [], goalKeys: new Set(),
+    });
+    Object.assign(game.state, {
+      mode: 'active', floor: 1, player: { x: 2, y: 2 },
+      boxes: [], hazards: [{ id: 0, x: 2, y: 1 }], items: [],
+      progress: 0, turns: 0, score: 0, hull: 1, specialCooldown: 0,
+      freezeTurns: 0, exitUnlocked: false, lastAbility: [],
+    });
+    const pressWithNativeActivation = (code) => {
+      const target = document.activeElement;
+      const event = harness.press(code, { target });
+      // Model the native completed key activation only at the browser boundary.
+      if (!event.defaultPrevented && ['Space', 'Enter'].includes(code) && target.tagName === 'BUTTON') target.click();
+      return event;
+    };
+
+    assert.equal(pressWithNativeActivation('Space').defaultPrevented, false);
+    assert.equal(game.state.mode, 'active', 'Space on focused Start preserves native activation');
+    assert.equal(game.state.turns, 0, 'Native Start activation must not spend a gameplay turn');
+
+    browserHelpers.releaseGameKeyboardFocus?.();
+    const gameplaySpace = pressWithNativeActivation('Space');
+    assert.equal(game.state.mode, 'gameover');
+    assert.equal(gameplaySpace.defaultPrevented, true, 'Prepared gameplay Space must reach the game');
+    assert.equal(game.state.hull, 0);
+    assert.equal(game.state.turns, 1);
+    assert.deepEqual(game.state.player, { x: 0, y: 0 });
+    assert.equal(game.state.score, 0);
+    assert.equal(document.activeElement, document.body, 'Gameplay setup must release the focused native control');
+    assert.equal(harness.nodes.get('game-overlay').classList.contains('is-visible'), true);
+    assert.equal(harness.nodes.get('game-overlay-title').textContent, '温室失守');
+
+    assert.equal(pressWithNativeActivation('Enter').defaultPrevented, true);
+    assert.deepEqual(JSON.parse(game.renderGameToText()), baseline, 'Enter on the game surface must recover the initial active run');
+    assert.equal(harness.nodes.get('game-overlay').classList.contains('is-visible'), false);
+    // The helper is also safe when body already owns focus.
+    browserHelpers.releaseGameKeyboardFocus();
+    assert.equal(document.activeElement, document.body);
+  } finally {
+    harness.restore();
+  }
+}
+
 function createFailingStorage({ failRead = false, failWriteKey } = {}) {
   const values = new Map();
   return {
@@ -198,6 +269,7 @@ const checks = {
   'native-controls': checkNativeControls,
   'game-shortcuts': checkGameShortcuts,
   'shortcuts-after-start-click': checkShortcutsAfterStartClick,
+  'orchid-loss-after-control-focus': checkOrchidLossAfterControlFocus,
   'storage-read-failure': checkStorageReadFailure,
   'score-write-failure': checkScoreWriteFailure,
   'floor-write-failure': checkFloorWriteFailure,

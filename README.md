@@ -211,7 +211,7 @@ npm run test:browser
 
 - `npm run check:manifest` 会核对仓库 HTML 总数、`index.html` 主推卡片数量，以及 README 中声明的页面数是否一致。
 - `npm test` 通过 `scripts/test-logic-suite.mjs` 自动发现并运行 `test:*:logic`，覆盖游戏、轻量应用、共享运行时与测试工具；Rift Stitch 的 55 个 Node 原生机制测试也已接入，统一输出 JSON 并传播失败退出码。
-- 每次 push 和 pull request 都会在 GitHub Actions 的 Node 22 环境执行 `npm run check:manifest` 与 `npm test`；这些原生检查无需安装依赖。
+- 每次推送到 `main` 或更新 pull request 都会在 GitHub Actions 的 Node 22 环境执行 `npm run check:manifest` 与 `npm test`；这些原生检查无需安装依赖，功能分支避免 push 与 pull request 重复运行。
 - 原生检查通过后，独立浏览器任务使用 `ubuntu-latest` 已安装的 `/usr/bin/google-chrome` 运行完整浏览器回归。任务先校验现有 Chrome，再通过 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci` 安装锁定依赖；若 Chrome 缺失则失败，不下载浏览器或回退到 Chromium。浏览器任务限时 25 分钟，实际结果以 Actions 运行为准。
 - `npm run test:browser` 会自动拉起仓库根目录的本地静态服务，再顺序执行当前已接入统一套件的主推像素游戏浏览器回归，并输出每个用例的进度与耗时。
 - 浏览器回归只使用本机已安装的 `Google Chrome`；如路径不在默认位置，可通过环境变量 `DEMOCODEX_CHROME_EXECUTABLE` 指向现有本机 Chrome 可执行文件。
