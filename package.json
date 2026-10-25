@@ -14,6 +14,7 @@
     "test:index-menu:browser": "node scripts/test-index-menu-browser.mjs",
     "test:full": "npm test && npm run test:browser",
     "test:grid-arcade-core:logic": "node scripts/test-grid-arcade-core-mechanics.mjs",
+    "test:grid-arcade-runtime:logic": "node scripts/test-grid-arcade-runtime.mjs",
     "test:solar-sentry:logic": "node -e \"const mod=require('./src/js/solar-sentry.js'); const result=mod.runSelfCheck(4); if (!result.ok) { console.error(JSON.stringify(result)); process.exit(1); } console.log(JSON.stringify(result));\"",
     "test:solar-sentry:browser": "node scripts/test-solar-sentry-browser.mjs",
     "test:crate-circuit:logic": "node -e \"const mod=require('./src/js/crate-circuit.js'); const result=mod.runSelfCheck(4); if (!result.ok) { console.error(JSON.stringify(result)); process.exit(1); } console.log(JSON.stringify(result));\"",
