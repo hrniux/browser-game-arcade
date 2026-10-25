@@ -14,6 +14,7 @@ import {
   discoverBrowserSuitesFromScripts,
 } from './browser-suite-discovery.mjs';
 import { startStaticServer } from './static-server.mjs';
+import { listLogicScripts } from './test-logic-suite.mjs';
 
 function delay(ms) {
   return new Promise((resolve) => {
@@ -126,4 +127,35 @@ try {
   }
 }
 
-console.log(JSON.stringify({ ok: true, checks: 9 }));
+assert.ok(listLogicScripts().includes('test:rift-stitch:logic'), 'Rift mechanics must run in npm test');
+const riftResult = await runJsonCommand({
+  command: process.execPath,
+  args: ['scripts/test-rift-stitch-logic.mjs'],
+  cwd: process.cwd(),
+});
+assert.equal(riftResult.ok, true);
+assert.ok(riftResult.count >= 55, 'All existing Rift mechanics tests must run');
+assert.equal(riftResult.failed, 0);
+
+const nodeFixtureDir = await fs.mkdtemp(path.join(os.tmpdir(), 'democodex-node-tests-'));
+try {
+  const failingTest = path.join(nodeFixtureDir, 'failing.test.mjs');
+  await fs.writeFile(failingTest, "import test from 'node:test'; import assert from 'node:assert/strict'; test('intentional failure fixture', () => assert.equal(1, 2));\n");
+  await assert.rejects(() => runJsonCommand({
+    command: process.execPath,
+    args: ['scripts/test-rift-stitch-logic.mjs', failingTest],
+    cwd: process.cwd(),
+  }), /intentional failure fixture/);
+  const passingTest = path.join(nodeFixtureDir, 'passing.test.mjs');
+  await fs.writeFile(passingTest, "import test from 'node:test'; test('passing fixture', () => {});\n");
+  const passed = await runJsonCommand({
+    command: process.execPath,
+    args: ['scripts/test-rift-stitch-logic.mjs', passingTest],
+    cwd: process.cwd(),
+  });
+  assert.deepEqual(passed, { ok: true, count: 1, passed: 1, failed: 0 });
+} finally {
+  await fs.rm(nodeFixtureDir, { recursive: true, force: true });
+}
+
+console.log(JSON.stringify({ ok: true, checks: 12 }));
