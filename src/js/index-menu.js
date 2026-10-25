@@ -957,6 +957,7 @@
   }
 
   function render() {
+    const focusKey = document.activeElement?.getAttribute("data-menu-focus-key");
     const visibleCards = getVisibleCards();
     syncControls(visibleCards);
     renderHero(visibleCards);
@@ -967,6 +968,16 @@
     renderLoadMore(visibleCards);
     syncLocationState();
     setShareFeedback(getDefaultShareFeedback());
+    if (focusKey) {
+      const replacement = [...document.querySelectorAll("[data-menu-focus-key]")]
+        .find((control) => control.getAttribute("data-menu-focus-key") === focusKey && !control.disabled);
+      if (replacement) {
+        replacement.focus({ preventScroll: true });
+      } else {
+        // Removing a filtered favorite or clearing filters removes the old control.
+        (focusKey.startsWith("favorite:") ? elements.favoritesToggle : elements.search).focus();
+      }
+    }
   }
 
   function syncControls(visibleCards) {
@@ -995,6 +1006,7 @@
       button.className = "menu-chip";
       button.type = "button";
       button.setAttribute("aria-pressed", String(state.category === category.id));
+      button.setAttribute("data-menu-focus-key", `category:${category.id}`);
       button.disabled = count === 0;
       button.addEventListener("click", () => {
         state.category = category.id;
@@ -1047,6 +1059,7 @@
       const clearButton = document.createElement("button");
       clearButton.className = "menu-clear-filters";
       clearButton.type = "button";
+      clearButton.setAttribute("data-menu-focus-key", "clear-filters");
       clearButton.textContent = "清空筛选";
       clearButton.addEventListener("click", () => {
         resetFilters();
@@ -1137,6 +1150,7 @@
     favoriteButton.type = "button";
     favoriteButton.textContent = "★";
     favoriteButton.setAttribute("aria-pressed", String(state.favorites.has(card.href)));
+    favoriteButton.setAttribute("data-menu-focus-key", `favorite:${card.href}`);
     favoriteButton.setAttribute(
       "aria-label",
       state.favorites.has(card.href) ? `取消收藏 ${card.title}` : `收藏 ${card.title}`
@@ -1265,6 +1279,7 @@
     const button = document.createElement("button");
     button.className = "menu-clear-filters";
     button.type = "button";
+    button.setAttribute("data-menu-focus-key", "clear-filters");
     button.textContent = "清空筛选";
     button.addEventListener("click", () => {
       resetFilters();

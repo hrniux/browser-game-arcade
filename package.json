@@ -7,6 +7,7 @@
     "check:manifest": "node scripts/check-demo-manifest.mjs",
     "test:manifest:logic": "node scripts/test-check-demo-manifest.mjs",
     "test:index-menu:logic": "node scripts/test-index-menu-url-state.mjs",
+    "test:index-menu-runtime:logic": "node scripts/test-index-menu-runtime.mjs",
     "test:browser-suite:logic": "node scripts/test-json-command-runner.mjs",
     "test": "npm run test:logic",
     "test:logic": "node scripts/test-logic-suite.mjs",

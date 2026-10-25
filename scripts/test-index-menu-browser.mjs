@@ -117,6 +117,44 @@ try {
   assert(afterLoadMore.renderedCards <= afterLoadMore.totalCards);
   assert.match(afterLoadMore.loadMoreText, /继续展开|已经全部展开/);
 
+  // Native keyboard activation must focus the newly rendered control, since
+  // render() replaces category/card nodes rather than updating them in place.
+  await page.getByRole('button', { name: /策略谜局/ }).focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => {
+    const active = document.activeElement;
+    return active?.classList.contains('menu-chip')
+      && active.getAttribute('aria-pressed') === 'true'
+      && active.textContent.includes('策略谜局');
+  }), true, 'Category activation must retain focus on the current category button');
+  await page.click('#menu-reset');
+
+  const favorite = page.locator('.menu-card__favorite').first();
+  const favoriteTitle = await favorite.getAttribute('aria-label');
+  await favorite.focus();
+  await page.keyboard.press('Space');
+  assert.equal(await page.evaluate(() => {
+    const active = document.activeElement;
+    return active?.classList.contains('menu-card__favorite')
+      && active.getAttribute('aria-pressed') === 'true';
+  }), true, 'Space must favorite once and focus its replacement button');
+  assert.equal(await page.locator('.menu-card__favorite:focus').getAttribute('aria-label'), `取消${favoriteTitle}`);
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('.menu-card__favorite:focus').getAttribute('aria-pressed'), 'false');
+  await page.keyboard.press('Space');
+  await page.click('#menu-favorites-toggle');
+  assert.equal(await page.locator('.menu-card__favorite').count(), 1);
+  await page.locator('.menu-card__favorite').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('.menu-card__favorite').count(), 0);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'menu-favorites-toggle');
+  await page.locator('#menu-active-filters .menu-clear-filters').focus();
+  await page.keyboard.press('Space');
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'menu-search');
+  await page.keyboard.type('推箱');
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'menu-search');
+  await page.keyboard.press('Escape');
+
   const screenshot = await maybeCaptureScreenshot(page, screenshotDir, 'index-menu.png', captureEnabled);
   assert.equal(errors.length, 0, `unexpected browser errors: ${JSON.stringify(errors)}`);
 
